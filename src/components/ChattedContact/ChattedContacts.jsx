@@ -7,6 +7,7 @@ const ChattedContactsPage = ({setUser,setProfile}) => {
   const api = Api();
   const token = localStorage.getItem('Token');
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState(""); 
   const [chattedContacts,setChattedContacts]=useState([])
 
 
@@ -29,23 +30,37 @@ const ChattedContactsPage = ({setUser,setProfile}) => {
       }
     } catch (error) {
       console.log(error);
-      navigate('/signin')
+      // navigate('/signin')
 
     }
   };
 
-  // console.log(chattedContacts);
+  const filteredProducts = chattedContacts.filter((data) =>
+   data.username.toLowerCase().includes(searchQuery.toLowerCase())
+ );
+
+  console.log(chattedContacts);
   
 
   return (
     <div className="flex flex-col h-screen bg-gradient-to-r from-purple-800 to-blue-700">
-      <header className="bg-transparent text-gray-900 p-4 text-center font-bold text-xl">
+      {/* <header className="bg-transparent text-gray-900 p-4 text-center font-bold text-xl">
         <h1>Messages</h1>
-      </header>
+      </header> */}
+
+      <div className="flex w-full  justify-between">
+      <input
+        type="search"
+        placeholder="Search Contacts..."
+        className="w-1/2 h-12 p-3 m-6 bg-purple-800 border text-gray-100 border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-700"
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+      />
+      </div>
 
       <div className="flex-1 overflow-y-auto p-6">
         <div className="space-y-6">
-          {chattedContacts.map((contact) => (
+          {filteredProducts.map((contact) => (
             <Link to={`/chat/${contact._id}`} key={contact._id}>
               <div className="flex items-center justify-between p-4 bg-gray-900 rounded-lg shadow-lg">
                 <div className='flex items-center'>
@@ -65,7 +80,7 @@ const ChattedContactsPage = ({setUser,setProfile}) => {
                   {(() => {
                     try {
                       // Date in DD/MM/YYYY format
-                      const [day, month, year] = contact.lastMessageDate.split('/').map(Number);
+                      const [month , day, year] = contact.lastMessageDate.split('/').map(Number);
                       
                       // Time in h:mm:ss a format (12-hour format with AM/PM)
                       const [time, ampm] = contact.lastMessageTime.split(' ');
@@ -79,12 +94,15 @@ const ChattedContactsPage = ({setUser,setProfile}) => {
 
                       // Get the current date and time
                       const now = new Date();
+                      console.log(lastMessageDateTime.getDate() ,now.getDate());
+                      
                       
                       // Check if the message was sent on the same day
                       const isSameDay = lastMessageDateTime.getFullYear() === now.getFullYear() &&
                                         lastMessageDateTime.getMonth() === now.getMonth() &&
                                         lastMessageDateTime.getDate() === now.getDate();
-
+                        console.log(isSameDay);
+                        
                       // Return time if same day, otherwise return date
                       return isSameDay ? contact.lastMessageTime : contact.lastMessageDate;
                     } catch (error) {

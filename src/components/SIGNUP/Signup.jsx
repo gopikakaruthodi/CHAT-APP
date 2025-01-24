@@ -10,6 +10,11 @@ const Signup = () => {
         username: "", email: "", phone: "", password: "", cpassword: "", accountType: "", profile: ""
     });
 
+    const [emailError, setEmailError] = useState('');
+    const [passwordError, setPasswordError] = useState('');   
+    const passwordRegex = /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{8,16}$/;
+    const emailRegex = /^\S+@\S+\.\S+$/;
+
     const handleChange = (e) => {
         setuserData((pre) => ({ ...pre, [e.target.name]: e.target.value }));
     };
@@ -25,6 +30,37 @@ const Signup = () => {
             alert(error.response.data.msg);
         }
     };
+
+    
+    const validatePassword = (value) => {
+        if (!passwordRegex.test(value)) {
+            setPasswordError(
+            'Password must be 8-16 characters long, include uppercase, lowercase, number, and special character.'
+          );
+        } else {
+            setPasswordError('');
+        }
+      };
+    
+      const handlePasswordChange = (e) => {
+        const value = e.target.value;
+        setuserData((pre)=>({...pre,[e.target.name]:e.target.value}))
+        validatePassword(value);
+      };
+    
+      const validateEmail = (value) => {
+        if (!emailRegex.test(value)) {
+          setEmailError('Invalid email format.');
+        } else {
+          setEmailError('');
+        }
+      };
+    
+      const handleEmailChange = (e) => {
+        const value = e.target.value;
+        setuserData((pre)=>({...pre,[e.target.name]:e.target.value}))
+        validateEmail(value);
+      };
 
     const handleFile = async (e) => {
         const profile = await convertBase64(e.target.files[0]);
@@ -78,11 +114,12 @@ const Signup = () => {
                                                 <input
                                                     type="email"
                                                     name="email"
-                                                    onChange={handleChange}
+                                                    onChange={handleEmailChange}
                                                     placeholder="Enter email"
                                                     className="block w-full py-4 pl-10 pr-4 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:border-indigo-500"
                                                 />
                                             </div>
+                                            {emailError && <p style={{ color: 'red',fontSize:'13px' }}>{emailError}</p>}
                                         </div>
 
                                         {/* PHONE */}
@@ -107,11 +144,12 @@ const Signup = () => {
                                                     <input
                                                         type="password"
                                                         name="password"
-                                                        onChange={handleChange}
+                                                        onChange={handlePasswordChange}
                                                         placeholder="Enter your password"
                                                         className="block w-full py-4 pl-10 pr-4 text-white bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:border-indigo-500"
                                                     />
                                                 </div>
+                                                {passwordError && <p style={{ color: 'red' , fontSize:'10px' , width:'200px' }}>{passwordError}</p>}
                                             </div>
 
                                             {/* CONFIRM PASSWORD */}

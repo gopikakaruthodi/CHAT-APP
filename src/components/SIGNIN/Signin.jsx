@@ -67,8 +67,9 @@ const Signin = () => {
                                             />
                                         </div>
                                     </div>
+                                    {/* forgot password */}
                                     <div className=" mt-2">
-                                        <p><Link to="/email" className="font-medium text-indigo-500 hover:text-indigo-400">Forgot password</Link></p>
+                                        <p><Link to="/password" className="font-medium text-indigo-500 hover:text-indigo-400">Forgot password</Link></p>
                                     </div>
 
                                     {/* SUBMIT BUTTON */}
@@ -85,7 +86,7 @@ const Signin = () => {
                                     {/* REGISTER LINK */}
                                     <div className="text-center mt-4">
                                         <p className="text-base text-gray-300">Don't have an account? 
-                                        <Link to="/password" className="font-medium text-indigo-500 hover:text-indigo-400">Create an Account</Link></p>
+                                        <Link to="/email" className="font-medium text-indigo-500 hover:text-indigo-400">Create an Account</Link></p>
                                     </div>
                                 </div>
                             </form>

@@ -4,6 +4,8 @@ import bcrypt from 'bcrypt'
 import nodemailer from "nodemailer"
 import messagesSchema from './models/messages.model.js'
 import chattedContactSchema from './models/chattedContacts.model.js'
+import crypto from 'crypto';
+
 
 
 const{sign}=jwt
@@ -222,33 +224,92 @@ export async function displayUserProfile(req,res) {
    }
 }
 
-export async function addMessage(req,res) {
+const encryptionKey = crypto.createHash('sha256').update('your-secret-key').digest('base64').slice(0, 32); // 32-byte key
+const iv = crypto.randomBytes(16); // Initialization Vector
+
+function encryptMessage(message) {
+    const cipher = crypto.createCipheriv('aes-256-cbc', Buffer.from(encryptionKey), iv);
+    let encrypted = cipher.update(message, 'utf8', 'hex');
+    encrypted += cipher.final('hex');
+    return { encryptedData: encrypted, iv: iv.toString('hex') };
+}
+
+// Helper function to decrypt the message
+function decryptMessage(encryptedData, iv) {
+    const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(encryptionKey), Buffer.from(iv, 'hex'));
+    let decrypted = decipher.update(encryptedData, 'hex', 'utf8');
+    decrypted += decipher.final('utf8');
+    return decrypted;
+}
+
+export async function addMessage(req, res) {
     try {
-        const {receiverID}=req.params;
-        const senderID=req.user;
-        const {newMessage,date,time}=req.body;
-        const chatPerson=await chattedContactSchema.findOne({senderID,receiverID});
-        if(!chatPerson)
-           await chattedContactSchema.create({senderID,receiverID})
-        await messagesSchema.create({senderID,receiverID,message:newMessage,date,time,read:false}).then(()=>{
-             res.status(201).send({msg:"success"});
-        }).catch((error)=>{
-         res.status(404).send({msg:"error"})
+        const { receiverID } = req.params;
+        const senderID = req.user;
+        const { newMessage, date, time } = req.body;
+
+        // Encrypt the message
+        const encryptedMessage = encryptMessage(newMessage);
+
+        // Check if chat contact exists, create if not
+        const chatPerson = await chattedContactSchema.findOne({ senderID, receiverID });
+        if (!chatPerson) await chattedContactSchema.create({ senderID, receiverID });
+
+        // Save encrypted message
+        await messagesSchema.create({
+            senderID,
+            receiverID,
+            message: encryptedMessage.encryptedData,
+            iv: encryptedMessage.iv,
+            date,
+            time,
+            read: false,
+            timeStamp: Date.now(),
         })
+            .then(() => {
+                res.status(201).send({ msg: "success" });
+            })
+            .catch((error) => {
+                console.error(error);
+                res.status(404).send({ msg: "error" });
+            });
     } catch (error) {
-        return res.status(404).send({msg:"error"})
+        console.error(error);
+        return res.status(404).send({ msg: "error" });
     }
 }
 
+
 export async function chat(req,res) {
     try {
-        const {receiverID}=req.params;
-        const senderID=req.user;
-        const receiver=await userSchema.findOne({_id:receiverID},{profile:1,username:1})
-        const chats=await messagesSchema.find({$or:[{senderID,receiverID},{senderID:receiverID,receiverID:senderID}]});
-        // console.log(chats);
-        
-        return res.status(200).send({chats,receiver,uid:senderID});
+        const { receiverID } = req.params;
+        const senderID = req.user;
+
+        // Fetch receiver's details
+        const receiver = await userSchema.findOne(
+            { _id: receiverID },
+            { profile: 1, username: 1 }
+        );
+
+        // Fetch chat messages
+        const chats = await messagesSchema.find({
+            $or: [
+                { senderID, receiverID },
+                { senderID: receiverID, receiverID: senderID }
+            ]
+        });
+
+        // Decrypt each message
+        const decryptedChats = chats.map(chat => {
+            const decryptedMessage = decryptMessage(chat.message, chat.iv);
+            return {
+                ...chat._doc, // Spread existing fields
+                message: decryptedMessage, // Replace encrypted message with decrypted message
+            };
+        });
+
+        return res.status(200).send({ chats: decryptedChats, receiver, uid: senderID });
+
     } catch (error) {
         return res.status(404).send({msg:"error"})
     }
@@ -280,7 +341,7 @@ export async function getChaters(req, res) {
                 const unreadCount = await messagesSchema.countDocuments({$or:[
                     {senderID: otherUserID,
                     receiverID: id,
-                    read: false}
+                    read: false }
                 ]});
 
                 // Fetch the last message between the two users
@@ -291,13 +352,18 @@ export async function getChaters(req, res) {
                     ],
                 })
                     .sort({ timeStamp: -1 }) // Sort by date and time descending
-                    .exec();
 
                 // Combine user details with the last message
+                // console.log(lastMessage)
+                const decryptedMessage = decryptMessage(lastMessage.message, lastMessage.iv);
+                console.log(decryptedMessage);
+                
+
                 return {
                     ...user._doc,
                     unreadCount,
-                    lastMessage: lastMessage ? lastMessage.message : null,
+
+                    lastMessage: lastMessage ? decryptedMessage : null,
                     lastMessageDate: lastMessage ? lastMessage.date : null,
                     lastMessageTime: lastMessage ? lastMessage.time : null,
                 };
@@ -307,8 +373,7 @@ export async function getChaters(req, res) {
         // Filter out null results (if any user lookup failed)
         const filteredChatters = chatterDetails.filter((chatter) => chatter !== null);
         // console.log(filteredChatters);
-        
-        return res.status(200).send({filteredChatters,user});
+        res.status(200).send({filteredChatters,user});
     } catch (error) {
         console.error("Error in getChaters:", error);
         return res.status(404).send({ msg: "Error" });

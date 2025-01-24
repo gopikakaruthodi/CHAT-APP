@@ -11,6 +11,7 @@ const Navbar = ({ user, profile }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  
 
   const toggleDropdown = () => {
     setIsDropdownOpen((prev) => !prev);
@@ -71,7 +72,7 @@ const Navbar = ({ user, profile }) => {
                 <div className="flex flex-col items-center space-y-4 p-4">
                   <div className="flex flex-wrap items-center">
                   <img src={profile} alt="user" className="w-7 h-7 object-cover border-gray-800 rounded-full mr-2" />
-                  <span className="text-gray-200 text-sm"> {user}</span>
+                  <span className="text-gray-200 text-sm font-semibold italic mr-5"> {user}</span>
                   </div>
                   <Link
                     to="/profile"
@@ -102,24 +103,24 @@ const Navbar = ({ user, profile }) => {
       {/* Mobile Menu Dropdown */}
       {isMenuOpen && (
         <div className="md:hidden mt-2 bg-gray-700 shadow-lg rounded-md">
-          <ul className="py-2">
-            <li>
-              <Link
-                to="/profile"
-                className="block px-4 py-2 text-gray-300 hover:bg-gray-600"
-              >
-                Profile
-              </Link>
-            </li>
-            <li>
-              <button
-                onClick={logout}
-                className="block w-full px-4 py-2 text-gray-300 hover:bg-gray-600"
-              >
-                Logout
-              </button>
-            </li>
-          </ul>
+          <div className="flex flex-col items-left space-y-4 p-4">
+                  <div className="flex flex-wrap items-center">
+                  <img src={profile} alt="user" className="w-7 h-7 object-cover border-gray-800 rounded-full mr-2" />
+                  <span className="text-gray-200 text-sm"> {user}</span>
+                  </div>
+                  <Link
+                    to="/profile"
+                    className="flex items-center text-gray-300 hover:text-indigo-400"
+                  >
+                    <FaUser className="mr-2" /> Profile
+                  </Link>
+                  <button
+                    onClick={logout}
+                    className="flex items-center text-gray-300 hover:text-red-400"
+                  >
+                    <FaSignOutAlt className="mr-2" /> Logout
+                  </button>
+                </div>
         </div>
       )}
     </nav>
